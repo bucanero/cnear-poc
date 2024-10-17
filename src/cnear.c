@@ -175,13 +175,10 @@ static cJSON* build_rpc_json(const char* method)
 {
     cJSON *base = cJSON_CreateObject();
 
-    if (!cJSON_AddStringToObject(base, "jsonrpc", "2.0"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(base, "id", "dontcare"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(base, "method", method))
+    if (!base ||
+        !cJSON_AddStringToObject(base, "jsonrpc", "2.0") ||
+        !cJSON_AddStringToObject(base, "id", "dontcare") ||
+        !cJSON_AddStringToObject(base, "method", method))
         goto end;
 
 	return base;
@@ -200,13 +197,10 @@ static cJSON* build_rpc_view_account(const char* account)
 
     cJSON *params = cJSON_CreateObject();
 
-    if (!cJSON_AddStringToObject(params, "request_type", "view_account"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "finality", "final"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "account_id", account))
+    if (!params ||
+        !cJSON_AddStringToObject(params, "request_type", "view_account") ||
+        !cJSON_AddStringToObject(params, "finality", "final") ||
+        !cJSON_AddStringToObject(params, "account_id", account))
         goto end;
 
 	cJSON_AddItemToObject(req, "params", params);
@@ -220,7 +214,7 @@ end:
 
 static cJSON* build_rpc_call_function(const char* account, const char* method, const char* json_args)
 {
-	char* b64out;
+	char* b64out = NULL;
 	size_t b64len;
     cJSON *req = build_rpc_json("query");
 
@@ -229,16 +223,11 @@ static cJSON* build_rpc_call_function(const char* account, const char* method, c
 
     cJSON *params = cJSON_CreateObject();
 
-    if (!cJSON_AddStringToObject(params, "request_type", "call_function"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "finality", "final"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "account_id", account))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "method_name", method))
+    if (!params ||
+        !cJSON_AddStringToObject(params, "request_type", "call_function") ||
+        !cJSON_AddStringToObject(params, "finality", "final") ||
+        !cJSON_AddStringToObject(params, "account_id", account) ||
+        !cJSON_AddStringToObject(params, "method_name", method))
         goto end;
 
 	b64out = base64_encode((void*)json_args, strlen(json_args), &b64len);
@@ -266,16 +255,11 @@ static cJSON* build_rpc_view_access_key(const char* account, const char* pubkey)
 
     cJSON *params = cJSON_CreateObject();
 
-    if (!cJSON_AddStringToObject(params, "request_type", "view_access_key"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "finality", "optimistic"))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "account_id", account))
-        goto end;
-
-    if (!cJSON_AddStringToObject(params, "public_key", pubkey))
+    if (!params ||
+        !cJSON_AddStringToObject(params, "request_type", "view_access_key") ||
+        !cJSON_AddStringToObject(params, "finality", "optimistic") ||
+        !cJSON_AddStringToObject(params, "account_id", account) ||
+        !cJSON_AddStringToObject(params, "public_key", pubkey))
         goto end;
 
 	cJSON_AddItemToObject(req, "params", params);
@@ -289,7 +273,7 @@ end:
 
 static cJSON* build_rpc_send_tx(const curl_memory_t* signed_tx)
 {
-	char* b64out;
+	char* b64out = NULL;
 	size_t b64len;
     cJSON *req = build_rpc_json("send_tx");
 
@@ -297,12 +281,11 @@ static cJSON* build_rpc_send_tx(const curl_memory_t* signed_tx)
 		return NULL;
 
     cJSON *params = cJSON_CreateObject();
+    b64out = base64_encode(signed_tx->memory, signed_tx->size, &b64len);
 
-    if (!cJSON_AddStringToObject(params, "wait_until", "EXECUTED_OPTIMISTIC"))
-        goto end;
-
-	b64out = base64_encode(signed_tx->memory, signed_tx->size, &b64len);
-    if (!cJSON_AddStringToObject(params, "signed_tx_base64", b64out))
+    if (!params || !b64out ||
+        !cJSON_AddStringToObject(params, "wait_until", "EXECUTED_OPTIMISTIC") ||
+        !cJSON_AddStringToObject(params, "signed_tx_base64", b64out))
         goto end;
 
 	free(b64out);
@@ -504,7 +487,6 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx)
     cnearResponse vk, ret = {0};
 	cJSON *rpc_res, *rpc_req, *item = NULL;
     curl_memory_t borsh_tx;
-    ed25519_signature sig;
     size_t hash_len = sizeof(near_tx->block_hash);
 
     near_tx->signer_id = near_account_id;
