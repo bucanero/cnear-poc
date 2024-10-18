@@ -76,8 +76,11 @@ int main(int argc, const char* argv[])
     result = near_rpc_call_function("demo-devhub-vid102.testnet", "get_greeting", "{}");
     if(result.rpc_code == 200)
     {
+        size_t len;
+        uint8_t* result_data = near_decode_result(&result, &len);
+
         printf("Response (%d):\n%s\n", result.rpc_code, result.json);
-        printf("---\n%s\n---\n", result.result_data);
+        printf("---\n%s\n---\n", result_data);
     }
     free(result.json);
 

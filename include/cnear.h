@@ -25,7 +25,6 @@ typedef struct
 {
     int rpc_code;
     char* json;
-    uint8_t* result_data;
 } cnearResponse;
 
 typedef struct FunctionCallAction
@@ -77,3 +76,5 @@ cnearResponse near_rpc_view_account(const char* account);
 cnearResponse near_rpc_call_function(const char* account, const char* method, const char* args);
 cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key);
 cnearResponse near_rpc_send_tx(nearTransaction* near_tx);
+
+uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size);

@@ -74,10 +74,10 @@ static size_t curl_write_memory(void *contents, size_t size, size_t nmemb, void 
 
 static int b58decode_ed25519_key(uint8_t* bin_key, size_t* klen, const char* b58_key)
 {
-	if (strncmp(b58_key, "ed25519:", 8) != 0)
-		return 0;
+    if (strncmp(b58_key, "ed25519:", 8) != 0)
+        return 0;
 
-	return b58tobin(bin_key, klen, b58_key + 8, 0);
+    return b58tobin(bin_key, klen, b58_key + 8, 0);
 }
 
 static int serialize_enum(curl_memory_t* mem_buf, uint8_t val)
@@ -192,8 +192,8 @@ static cJSON* build_rpc_view_account(const char* account)
 {
     cJSON *req = build_rpc_json("query");
 
-	if (!req)
-		return NULL;
+    if (!req)
+        return NULL;
 
     cJSON *params = cJSON_CreateObject();
 
@@ -203,8 +203,8 @@ static cJSON* build_rpc_view_account(const char* account)
         !cJSON_AddStringToObject(params, "account_id", account))
         goto end;
 
-	cJSON_AddItemToObject(req, "params", params);
-	return req;
+    cJSON_AddItemToObject(req, "params", params);
+    return req;
 
 end:
     cJSON_Delete(params);
@@ -214,12 +214,12 @@ end:
 
 static cJSON* build_rpc_call_function(const char* account, const char* method, const char* json_args)
 {
-	char* b64out = NULL;
-	size_t b64len;
+    char* b64out = NULL;
+    size_t b64len;
     cJSON *req = build_rpc_json("query");
 
-	if (!req)
-		return NULL;
+    if (!req)
+        return NULL;
 
     cJSON *params = cJSON_CreateObject();
 
@@ -230,17 +230,17 @@ static cJSON* build_rpc_call_function(const char* account, const char* method, c
         !cJSON_AddStringToObject(params, "method_name", method))
         goto end;
 
-	b64out = base64_encode((void*)json_args, strlen(json_args), &b64len);
+    b64out = base64_encode((void*)json_args, strlen(json_args), &b64len);
     if (!cJSON_AddStringToObject(params, "args_base64", b64out))
         goto end;
 
-	free(b64out);
+    free(b64out);
 
-	cJSON_AddItemToObject(req, "params", params);
-	return req;
+    cJSON_AddItemToObject(req, "params", params);
+    return req;
 
 end:
-	free(b64out);
+    free(b64out);
     cJSON_Delete(params);
     cJSON_Delete(req);
     return NULL;
@@ -250,8 +250,8 @@ static cJSON* build_rpc_view_access_key(const char* account, const char* pubkey)
 {
     cJSON *req = build_rpc_json("query");
 
-	if (!req)
-		return NULL;
+    if (!req)
+        return NULL;
 
     cJSON *params = cJSON_CreateObject();
 
@@ -262,8 +262,8 @@ static cJSON* build_rpc_view_access_key(const char* account, const char* pubkey)
         !cJSON_AddStringToObject(params, "public_key", pubkey))
         goto end;
 
-	cJSON_AddItemToObject(req, "params", params);
-	return req;
+    cJSON_AddItemToObject(req, "params", params);
+    return req;
 
 end:
     cJSON_Delete(params);
@@ -273,12 +273,12 @@ end:
 
 static cJSON* build_rpc_send_tx(const curl_memory_t* signed_tx)
 {
-	char* b64out = NULL;
-	size_t b64len;
+    char* b64out = NULL;
+    size_t b64len;
     cJSON *req = build_rpc_json("send_tx");
 
-	if (!req)
-		return NULL;
+    if (!req)
+        return NULL;
 
     cJSON *params = cJSON_CreateObject();
     b64out = base64_encode(signed_tx->memory, signed_tx->size, &b64len);
@@ -288,13 +288,13 @@ static cJSON* build_rpc_send_tx(const curl_memory_t* signed_tx)
         !cJSON_AddStringToObject(params, "signed_tx_base64", b64out))
         goto end;
 
-	free(b64out);
+    free(b64out);
 
-	cJSON_AddItemToObject(req, "params", params);
-	return req;
+    cJSON_AddItemToObject(req, "params", params);
+    return req;
 
 end:
-	free(b64out);
+    free(b64out);
     cJSON_Delete(params);
     cJSON_Delete(req);
     return NULL;
@@ -441,25 +441,9 @@ cnearResponse near_rpc_call_function(const char* account, const char* method, co
         return ret;
 
     ret.json = cJSON_Print(rpc_res);
-    const cJSON* out = cJSON_GetObjectItemCaseSensitive(rpc_res, "result");
-    if (cJSON_IsArray(out))
-    {
-        int i = 0;
-        const cJSON *val = NULL;
-        ret.result_data = malloc(cJSON_GetArraySize(out) +1);
-
-        cJSON_ArrayForEach(val, out)
-        {
-            ret.result_data[i++] = (cJSON_IsNumber(val) ? val->valueint : 0);
-        }
-        ret.result_data[i] = 0;
-
-        LOG_DBG("----\n%s\n----\n", ret.result_data);
-    }
-
-    LOG_DBG("----\n%s\n----\n", ret.json);
     cJSON_Delete(rpc_res);
 
+    LOG_DBG("----\n%s\n----\n", ret.json);
     return ret;
 }
 
@@ -485,7 +469,7 @@ cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key)
 cnearResponse near_rpc_send_tx(nearTransaction* near_tx)
 {
     cnearResponse vk, ret = {0};
-	cJSON *rpc_res, *rpc_req, *item = NULL;
+    cJSON *rpc_res, *rpc_req, *item = NULL;
     curl_memory_t borsh_tx;
     size_t hash_len = sizeof(near_tx->block_hash);
 
@@ -533,13 +517,13 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx)
     free(borsh_tx.memory);
 
     // Send JSON RPC request
-	rpc_res = exec_curl_rpc_call(rpc_req, &ret.rpc_code);
+    rpc_res = exec_curl_rpc_call(rpc_req, &ret.rpc_code);
     cJSON_Delete(rpc_req);
 
     ret.json = cJSON_Print(rpc_res);
-	LOG_DBG("----\n%s\n----\n", ret.json);
     cJSON_Delete(rpc_res);
 
+    LOG_DBG("----\n%s\n----\n", ret.json);
     return ret;
 }
 
@@ -587,4 +571,33 @@ bool near_account_init_json(const char* credentials_json)
     ret = near_account_init(account, priv, pub);
     cJSON_Delete(json);
     return ret;
+}
+
+uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size)
+{
+    uint8_t* result_data = NULL;
+    cJSON* rpc_res = cJSON_Parse(response->json);
+
+    if (!rpc_res)
+        return NULL;
+
+    const cJSON* out = cJSON_GetObjectItemCaseSensitive(rpc_res, "result");
+    if (cJSON_IsArray(out))
+    {
+        int i = 0;
+        const cJSON *val = NULL;
+        *out_size = cJSON_GetArraySize(out);
+        result_data = malloc(cJSON_GetArraySize(out) +1);
+
+        cJSON_ArrayForEach(val, out)
+        {
+            result_data[i++] = (cJSON_IsNumber(val) ? val->valueint : 0);
+        }
+        result_data[i] = 0;
+
+        LOG_DBG("----\n%s\n----\n", result_data);
+    }
+    cJSON_Delete(rpc_res);
+
+    return result_data;
 }
