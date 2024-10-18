@@ -212,10 +212,33 @@ end:
     return NULL;
 }
 
-static cJSON* build_rpc_call_function(const char* account, const char* method, const char* json_args)
+static cJSON* build_rpc_view_state(const char* account, const char* b64_prefix)
 {
-    char* b64out = NULL;
-    size_t b64len;
+    cJSON *req = build_rpc_json("query");
+
+    if (!req)
+        return NULL;
+
+    cJSON *params = cJSON_CreateObject();
+
+    if (!params ||
+        !cJSON_AddStringToObject(params, "request_type", "view_state") ||
+        !cJSON_AddStringToObject(params, "finality", "final") ||
+        !cJSON_AddStringToObject(params, "account_id", account) ||
+        !cJSON_AddStringToObject(params, "prefix_base64", b64_prefix))
+        goto end;
+
+    cJSON_AddItemToObject(req, "params", params);
+    return req;
+
+end:
+    cJSON_Delete(params);
+    cJSON_Delete(req);
+    return NULL;
+}
+
+static cJSON* build_rpc_call_function(const char* account, const char* method, const char* b64args)
+{
     cJSON *req = build_rpc_json("query");
 
     if (!req)
@@ -227,20 +250,14 @@ static cJSON* build_rpc_call_function(const char* account, const char* method, c
         !cJSON_AddStringToObject(params, "request_type", "call_function") ||
         !cJSON_AddStringToObject(params, "finality", "final") ||
         !cJSON_AddStringToObject(params, "account_id", account) ||
-        !cJSON_AddStringToObject(params, "method_name", method))
+        !cJSON_AddStringToObject(params, "method_name", method) ||
+        !cJSON_AddStringToObject(params, "args_base64", b64args))
         goto end;
-
-    b64out = base64_encode((void*)json_args, strlen(json_args), &b64len);
-    if (!cJSON_AddStringToObject(params, "args_base64", b64out))
-        goto end;
-
-    free(b64out);
 
     cJSON_AddItemToObject(req, "params", params);
     return req;
 
 end:
-    free(b64out);
     cJSON_Delete(params);
     cJSON_Delete(req);
     return NULL;
@@ -271,30 +288,24 @@ end:
     return NULL;
 }
 
-static cJSON* build_rpc_send_tx(const curl_memory_t* signed_tx)
+static cJSON* build_rpc_send_tx(const char* b64out, const char* status)
 {
-    char* b64out = NULL;
-    size_t b64len;
     cJSON *req = build_rpc_json("send_tx");
 
     if (!req)
         return NULL;
 
     cJSON *params = cJSON_CreateObject();
-    b64out = base64_encode(signed_tx->memory, signed_tx->size, &b64len);
 
-    if (!params || !b64out ||
-        !cJSON_AddStringToObject(params, "wait_until", "EXECUTED_OPTIMISTIC") ||
+    if (!params ||
+        !cJSON_AddStringToObject(params, "wait_until", status) ||
         !cJSON_AddStringToObject(params, "signed_tx_base64", b64out))
         goto end;
-
-    free(b64out);
 
     cJSON_AddItemToObject(req, "params", params);
     return req;
 
 end:
-    free(b64out);
     cJSON_Delete(params);
     cJSON_Delete(req);
     return NULL;
@@ -418,6 +429,39 @@ cnearResponse near_rpc_view_account(const char* account)
     rpc_res = exec_curl_rpc_call(rpc_req, &ret.rpc_code);
     cJSON_Delete(rpc_req);
 
+    if (!rpc_res)
+        return ret;
+
+    ret.json = cJSON_Print(rpc_res);
+    cJSON_Delete(rpc_res);
+
+    LOG_DBG("----\n%s\n----\n", ret.json);
+    return(ret);
+}
+
+cnearResponse near_rpc_view_state(const char* account, const char* prefix)
+{
+    size_t b64len;
+    char* b64out = NULL;
+    cnearResponse ret = {0};
+    cJSON *rpc_req, *rpc_res = NULL;
+
+    b64out = base64_encode((void*)prefix, strlen(prefix), &b64len);
+    if (!b64out)
+        return ret;
+
+    rpc_req = build_rpc_view_state(account, b64out);
+    free(b64out);
+
+    if(!rpc_req)
+        return ret;
+
+    rpc_res = exec_curl_rpc_call(rpc_req, &ret.rpc_code);
+    cJSON_Delete(rpc_req);
+
+    if (!rpc_res)
+        return ret;
+
     ret.json = cJSON_Print(rpc_res);
     cJSON_Delete(rpc_res);
 
@@ -427,9 +471,17 @@ cnearResponse near_rpc_view_account(const char* account)
 
 cnearResponse near_rpc_call_function(const char* account, const char* method, const char* args)
 {
+    size_t b64len;
+    char* b64out = NULL;
     cnearResponse ret = {0};
-    cJSON* rpc_res = NULL;
-    cJSON* rpc_req = build_rpc_call_function(account, method, args);
+    cJSON *rpc_req, *rpc_res = NULL;
+
+    b64out = base64_encode((void*)args, strlen(args), &b64len);
+    if (!b64out)
+        return ret;
+
+    rpc_req = build_rpc_call_function(account, method, b64out);
+    free(b64out);
 
     if (!rpc_req)
         return ret;
@@ -459,6 +511,9 @@ cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key)
     rpc_res = exec_curl_rpc_call(rpc_req, &ret.rpc_code);
     cJSON_Delete(rpc_req);
 
+    if (!rpc_res)
+        return ret;
+
     ret.json = cJSON_Print(rpc_res);
     cJSON_Delete(rpc_res);
 
@@ -466,12 +521,13 @@ cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key)
     return(ret);
 }
 
-cnearResponse near_rpc_send_tx(nearTransaction* near_tx)
+cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status)
 {
+    size_t len;
+    char* b64out = NULL;
     cnearResponse vk, ret = {0};
     cJSON *rpc_res, *rpc_req, *item = NULL;
     curl_memory_t borsh_tx;
-    size_t hash_len = sizeof(near_tx->block_hash);
 
     near_tx->signer_id = near_account_id;
     near_tx->key_type = nearKeyTypeED25519;
@@ -491,16 +547,11 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx)
     }
 
     item = cJSON_GetObjectItemCaseSensitive(rpc_res, "block_hash");
-////test
-//    cJSON_SetValuestring(item, "79dWLHmp9a2Nt8Kjej3iNq34T1ts4w8WApMGcUXyehwg");
-////
-    b58tobin(near_tx->block_hash, &hash_len, cJSON_GetStringValue(item), 0);
+    len = sizeof(near_tx->block_hash);
+    b58tobin(near_tx->block_hash, &len, cJSON_GetStringValue(item), 0);
 
     item = cJSON_GetObjectItemCaseSensitive(rpc_res, "nonce");
     near_tx->nonce = (uint64_t) cJSON_GetNumberValue(item);
-////test
-//    near_tx->nonce = 66097883000036;
-////
     near_tx->nonce++;
     cJSON_Delete(rpc_res);
 
@@ -513,12 +564,20 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx)
 //    LOG_BUF(borsh_tx.memory, borsh_tx.size);
 
     // Build JSON RPC request
-    rpc_req = build_rpc_send_tx(&borsh_tx);
+    b64out = base64_encode(borsh_tx.memory, borsh_tx.size, &len);
+    rpc_req = build_rpc_send_tx(b64out, status);
     free(borsh_tx.memory);
+    free(b64out);
+
+    if (!rpc_req)
+        return ret;
 
     // Send JSON RPC request
     rpc_res = exec_curl_rpc_call(rpc_req, &ret.rpc_code);
     cJSON_Delete(rpc_req);
+
+    if (!rpc_res)
+        return ret;
 
     ret.json = cJSON_Print(rpc_res);
     cJSON_Delete(rpc_res);

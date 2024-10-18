@@ -20,6 +20,26 @@
 #define NEAR_MAINNET_RPC_SERVER_URL     "https://rpc.mainnet.near.org"
 #define NEAR_DEFAULT_100_TGAS           100000000000000
 
+  /// TxExecutionStatus
+  /// Transaction is waiting to be included into the block
+#define NEAR_TX_STATUS_NONE             "NONE"
+  /// Transaction is included into the block. The block may be not finalized yet
+#define NEAR_TX_STATUS_INCLUDED         "INCLUDED"
+  /// Transaction is included into the block +
+  /// All non-refund transaction receipts finished their execution.
+  /// The corresponding blocks for tx and each receipt may be not finalized yet
+  /// [default]
+#define NEAR_TX_STATUS_EXEC_OPTIMISTIC  "EXECUTED_OPTIMISTIC"
+  /// Transaction is included into finalized block
+#define NEAR_TX_STATUS_INCLUDED_FINAL   "INCLUDED_FINAL"
+  /// Transaction is included into finalized block +
+  /// All non-refund transaction receipts finished their execution.
+  /// The corresponding blocks for each receipt may be not finalized yet
+#define NEAR_TX_STATUS_EXECUTED         "EXECUTED"
+  /// Transaction is included into finalized block +
+  /// Execution of all transaction receipts is finalized, including refund receipts
+#define NEAR_TX_STATUS_FINAL            "FINAL"
+
 
 typedef struct 
 {
@@ -73,8 +93,9 @@ bool near_account_init(const char* account, const char* b58_priv, const char* b5
 bool near_account_init_json(const char* credentials_json);
 
 cnearResponse near_rpc_view_account(const char* account);
-cnearResponse near_rpc_call_function(const char* account, const char* method, const char* args);
 cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key);
-cnearResponse near_rpc_send_tx(nearTransaction* near_tx);
+cnearResponse near_rpc_view_state(const char* account, const char* prefix);
+cnearResponse near_rpc_call_function(const char* account, const char* method, const char* args);
+cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status);
 
 uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size);

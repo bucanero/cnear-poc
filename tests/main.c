@@ -18,9 +18,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "base64.h"
-#include "libbase58.h"
-
 #define TEST_ACCOUNT    "dev-1640093409715-22205231677544"
 #define TEST_PUBKEY     "ed25519:FY835wAj7g8fRMncf4tqkyT3YdoW71t1ERnt3L78R28i"
 #define TEST_PRVKEY     "ed25519:36gU64pAbTLH6uuxUeGvwF8n3fUfnDRSC87Z7Q5Ez2WdhcCy2KB6KtGX1WDcym6VezUhojWN4waBiwFAvxtXXNJN"
@@ -59,6 +56,13 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
+	result = near_rpc_view_state("guest-book.testnet", "m::999");
+    if(result.rpc_code == 200)
+    {
+        printf("Response (%d):\n%s\n", result.rpc_code, result.json);
+    }
+    free(result.json);
+
 	result = near_rpc_view_account("demo-devhub-vid100.testnet");
     if(result.rpc_code == 200)
     {
@@ -66,7 +70,7 @@ int main(int argc, const char* argv[])
     }
     free(result.json);
 
-    result = near_rpc_send_tx(&test_tx);
+    result = near_rpc_send_tx(&test_tx, NEAR_TX_STATUS_EXEC_OPTIMISTIC);
     if(result.rpc_code == 200)
     {
         printf("Response (%d):\n%s\n", result.rpc_code, result.json);
