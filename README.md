@@ -28,6 +28,9 @@ make tests
 
 ## General
 
+- [`near_rpc_init`](#initialization) - Initialize the RPC client.
+- [`near_rpc_cleanup`](#cleanup) - Cleanup the RPC client.
+
 ### Initialization
 
 Initialize the RPC client with the NEAR RPC URL. Can also initialize the libcurl library.
@@ -45,6 +48,9 @@ void near_rpc_cleanup(bool curl_cleanup);
 ```
 
 ## Signer Account
+
+- [`near_account_init`](#set-account-keys) - Set account keys.
+- [`near_account_init_json`](#set-account-keys-from-json) - Set account keys from JSON.
 
 ### Set Account keys
 
@@ -67,6 +73,13 @@ near_account_init_json("{\"account_id\":\"dev...\",\"public_k...}");
 ```
 
 ## RPC
+
+- [`near_rpc_view_account`](#rpc-view-account) - View account information.
+- [`near_rpc_view_access_key`](#rpc-view-access-key) - View access key information.
+- [`near_rpc_view_state`](#rpc-view-contract-state) - View contract state.
+- [`near_rpc_call_function`](#rpc-call-contract-method-read-only) - Call contract method (read-only).
+- [`near_rpc_send_tx`](#rpc-send-transaction) - Send transaction.
+- [`near_contract_call`](#call-contract-method-change-state) - Call contract method (change state).
 
 ### RPC View Account
 
@@ -147,6 +160,8 @@ result = near_contract_call("demo-devhub-vid102.testnet",
 ```
 
 ## Misc
+
+- [`near_decode_result`](#decode-result) - Decode the JSON result from a smart contract RPC call.
 
 ### Decode Result
 
