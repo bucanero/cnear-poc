@@ -98,4 +98,6 @@ cnearResponse near_rpc_view_state(const char* account, const char* prefix);
 cnearResponse near_rpc_call_function(const char* account, const char* method, const char* args);
 cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status);
 
+cnearResponse near_contract_call(const char* contract, const char* method, const char* args, uint64_t gas, uint64_t deposit);
+
 uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size);

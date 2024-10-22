@@ -56,13 +56,18 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
-	result = near_rpc_view_state("guest-book.testnet", "m::999");
+    // https://docs.near.org/api/rpc/contracts#view-contract-state
+    // View contract state for contract 'guest-book.testnet'
+    // and filter key prefix 'm::999'
+    result = near_rpc_view_state("guest-book.testnet", "m::999");
     if(result.rpc_code == 200)
     {
         printf("Response (%d):\n%s\n", result.rpc_code, result.json);
     }
     free(result.json);
 
+    // https://docs.near.org/api/rpc/contracts#view-account
+    // View basic account info for account 'demo-devhub-vid100.testnet'
 	result = near_rpc_view_account("demo-devhub-vid100.testnet");
     if(result.rpc_code == 200)
     {
@@ -70,6 +75,9 @@ int main(int argc, const char* argv[])
     }
     free(result.json);
 
+    // https://docs.near.org/api/rpc/transactions#send-tx
+    // Send a transaction to the network
+    // Note: requires gas, and a signer account
     result = near_rpc_send_tx(&test_tx, NEAR_TX_STATUS_EXEC_OPTIMISTIC);
     if(result.rpc_code == 200)
     {
@@ -77,6 +85,21 @@ int main(int argc, const char* argv[])
     }
     free(result.json);
 
+    // Call a contract function 'set_greeting' on contract 'demo-devhub-vid102.testnet'
+    // with JSON arguments '{"greeting":"Hello cNEAR!"}'
+    // Note: this is a change method that modifies the contract's state,
+    // so it's a signed transaction (require gas, and a signer account)
+    result = near_contract_call("demo-devhub-vid102.testnet", "set_greeting", "{\"greeting\":\"Hello cNEAR!\"}", NEAR_DEFAULT_100_TGAS, 0);
+    if(result.rpc_code == 200)
+    {
+        printf("Response (%d):\n%s\n", result.rpc_code, result.json);
+    }
+    free(result.json);
+
+    // https://docs.near.org/api/rpc/contracts#call-a-contract-function
+    // Call a contract function 'get_greeting' on contract 'demo-devhub-vid102.testnet'
+    // with empty JSON arguments
+    // Note: this is a view function (read-only), so it doesn't require gas
     result = near_rpc_call_function("demo-devhub-vid102.testnet", "get_greeting", "{}");
     if(result.rpc_code == 200)
     {

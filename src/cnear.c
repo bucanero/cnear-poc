@@ -660,3 +660,21 @@ uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size)
 
     return result_data;
 }
+
+cnearResponse near_contract_call(const char* contract, const char* method, const char* args, uint64_t gas, uint64_t deposit)
+{
+    nearAction call_action = {
+        .method_name = (char*) method,
+        .args = (char*) args,
+        .gas = gas,
+        .deposit = deposit
+    };
+    nearTransaction test_tx = {
+        .signer_id = NULL,
+        .nonce = 0,
+        .receiver_id = (char*) contract,
+        .actions = &call_action
+    };
+
+    return near_rpc_send_tx(&test_tx, NEAR_TX_STATUS_EXEC_OPTIMISTIC);
+}
