@@ -43,7 +43,7 @@ int main(int argc, const char* argv[])
     };
 
 
-    if (!near_rpc_init(NEAR_TESTNET_RPC_SERVER_URL))
+    if (!near_rpc_init(NEAR_TESTNET_RPC_SERVER_URL, true))
     {
         printf("Error initializing RPC\n");
         return 1;
@@ -111,7 +111,7 @@ int main(int argc, const char* argv[])
     }
     free(result.json);
 
-    near_rpc_cleanup();
+    near_rpc_cleanup(true);
 
     return 0;
 }

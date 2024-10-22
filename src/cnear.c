@@ -391,9 +391,9 @@ end:
  * RPC API
  ***************************************************************************/
 
-bool near_rpc_init(const char* rpc_url)
+bool near_rpc_init(const char* rpc_url, bool curl_init)
 {
-    if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK)
+    if (curl_init && curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK)
     {
         LOG_DBG("curl_global_init() failed\n");
         return false;
@@ -405,9 +405,8 @@ bool near_rpc_init(const char* rpc_url)
     return true;
 }
 
-void near_rpc_cleanup(void)
+void near_rpc_cleanup(bool curl_cleanup)
 {
-    curl_global_cleanup();
     free(near_rpc_url);
     free(near_account_id);
     free(near_b58_pub_key);
@@ -415,6 +414,9 @@ void near_rpc_cleanup(void)
     near_rpc_url = NULL;
     near_account_id = NULL;
     near_b58_pub_key = NULL;
+
+    if (curl_cleanup)
+        curl_global_cleanup();
 }
 
 cnearResponse near_rpc_view_account(const char* account)

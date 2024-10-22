@@ -14,6 +14,7 @@
  ***************************************************************************/
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 
 #define NEAR_TESTNET_RPC_SERVER_URL     "https://rpc.testnet.near.org"
@@ -86,8 +87,8 @@ enum nearKeyType
  * RPC API
  ***************************************************************************/
 
-bool near_rpc_init(const char* rpc_url);
-void near_rpc_cleanup(void);
+bool near_rpc_init(const char* rpc_url, bool curl_init);
+void near_rpc_cleanup(bool curl_cleanup);
 
 bool near_account_init(const char* account, const char* b58_priv, const char* b58_pub);
 bool near_account_init_json(const char* credentials_json);
