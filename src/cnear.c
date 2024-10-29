@@ -19,7 +19,6 @@
 #include "cnear.h"
 #include "cJSON.h"
 #include "base64.h"
-#include "libbase58.h"
 #include "sha2.h"
 #include "ed25519.h"
 
@@ -27,8 +26,9 @@
 
 #ifdef DEBUGLOG
 #define LOG_DBG printf
-static void LOG_BUF(const uint8_t* tmp, size_t len)
+static void LOG_BUF(const char* str, const uint8_t* tmp, size_t len)
 {
+    printf("%s\n", str);
     while(len--)
         printf("%02X%c", *tmp++, (len % 0x10) ? ' ' : '\n');
 
@@ -72,12 +72,12 @@ static size_t curl_write_memory(void *contents, size_t size, size_t nmemb, void 
     return realsize;
 }
 
-static int b58decode_ed25519_key(uint8_t* bin_key, size_t* klen, const char* b58_key)
+static bool b58decode_ed25519_key(uint8_t* bin_key, size_t klen, const char* b58_key)
 {
     if (strncmp(b58_key, "ed25519:", 8) != 0)
         return 0;
 
-    return b58tobin(bin_key, klen, b58_key + 8, 0);
+    return (base58_decode(b58_key + 8, bin_key, klen) == klen);
 }
 
 static int serialize_enum(curl_memory_t* mem_buf, uint8_t val)
@@ -181,7 +181,7 @@ static cJSON* build_rpc_json(const char* method)
         !cJSON_AddStringToObject(base, "method", method))
         goto end;
 
-	return base;
+    return base;
 
 end:
     cJSON_Delete(base);
@@ -374,7 +374,9 @@ static cJSON* exec_curl_rpc_call(const cJSON* data, int* ret_code)
     cJSON *json = cJSON_Parse((char*) chunk.memory);
     if (json)
     {
-        res = cJSON_DetachItemFromObjectCaseSensitive(json, (response_code == 200) ? "result" : "error");
+        res = cJSON_DetachItemFromObjectCaseSensitive(json, "result");
+        if (!res)
+            res = cJSON_DetachItemFromObjectCaseSensitive(json, "error");
         cJSON_Delete(json);
     }
 
@@ -549,8 +551,7 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status)
     }
 
     item = cJSON_GetObjectItemCaseSensitive(rpc_res, "block_hash");
-    len = sizeof(near_tx->block_hash);
-    b58tobin(near_tx->block_hash, &len, cJSON_GetStringValue(item), 0);
+    base58_decode(cJSON_GetStringValue(item), near_tx->block_hash, sizeof(near_tx->block_hash));
 
     item = cJSON_GetObjectItemCaseSensitive(rpc_res, "nonce");
     near_tx->nonce = (uint64_t) cJSON_GetNumberValue(item);
@@ -559,11 +560,11 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status)
 
     // Serialize transaction
     borsh_tx = serialize_transaction(near_tx);
-//    LOG_BUF(borsh_tx.memory, borsh_tx.size);
+    LOG_BUF("Tx", borsh_tx.memory, borsh_tx.size);
 
     // Sign serialized transaction
     sign_transaction(&borsh_tx);
-//    LOG_BUF(borsh_tx.memory, borsh_tx.size);
+    LOG_BUF("Signed Tx", borsh_tx.memory, borsh_tx.size);
 
     // Build JSON RPC request
     b64out = base64_encode(borsh_tx.memory, borsh_tx.size, &len);
@@ -590,22 +591,18 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status)
 
 bool near_account_init(const char* account, const char* b58_priv, const char* b58_pub)
 {
-    size_t len;
-
     free(near_account_id);
     free(near_b58_pub_key);
     near_account_id = strdup(account);
     near_b58_pub_key = strdup(b58_pub);
 
-    len = sizeof(near_public_key);
-    if (!b58decode_ed25519_key(near_public_key, &len, b58_pub))
+    if (!b58decode_ed25519_key(near_public_key, sizeof(near_public_key), b58_pub))
         return false;
-//	LOG_BUF(near_public_key, sizeof(ed25519_public_key));
+    LOG_BUF("Pub Key", near_public_key, sizeof(ed25519_public_key));
 
-    len = sizeof(near_private_key);
-    if (!b58decode_ed25519_key(near_private_key, &len, b58_priv))
+    if (!b58decode_ed25519_key(near_private_key, sizeof(near_private_key), b58_priv))
         return false;
-//	LOG_BUF(near_private_key, sizeof(near_private_key));
+    LOG_BUF("Priv Key", near_private_key, sizeof(near_private_key));
 
     return true;
 }

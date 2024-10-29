@@ -1,5 +1,5 @@
 TARGET    = libcnear.a
-OBJS      = src/cnear.o src/base64.o src/base58.o src/cJSON.o \
+OBJS      = src/cnear.o src/base64.o src/cJSON.o \
 	ed25519-donna/curve25519-donna-32bit.o ed25519-donna/curve25519-donna-helpers.o ed25519-donna/curve25519-donna-scalarmult-base.o ed25519-donna/ed25519-donna-32bit-tables.o ed25519-donna/ed25519-donna-basepoint-table.o ed25519-donna/ed25519-donna-impl-base.o ed25519-donna/ed25519-keccak.o ed25519-donna/ed25519-sha3.o ed25519-donna/ed25519.o ed25519-donna/modm-donna-32bit.o \
 	ed25519-donna/memzero.o ed25519-donna/sha2.o ed25519-donna/sha3.o \
 

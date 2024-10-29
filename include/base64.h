@@ -25,3 +25,13 @@ char * base64_encode(const unsigned char *src, size_t len, size_t *out_len);
  * Caller is responsible for freeing the returned buffer.
  */
 unsigned char * base64_decode(const unsigned char *src, size_t len, size_t *out_len);
+
+/**
+ * base58_decode - Base58 decode
+ * @input: Data to be decoded
+ * @output: Allocated buffer of out_len bytes to store decoded data
+ * @out_len: output length variable
+ * Returns: decoded data length
+ *
+ */
+int base58_decode(const char* input, unsigned char *output, size_t outsize);
