@@ -22,25 +22,27 @@
 #define NEAR_DEFAULT_100_TGAS           100000000000000
 
   /// TxExecutionStatus
+typedef enum
+{
   /// Transaction is waiting to be included into the block
-#define NEAR_TX_STATUS_NONE             "NONE"
+    NEAR_TX_STATUS_NONE,
   /// Transaction is included into the block. The block may be not finalized yet
-#define NEAR_TX_STATUS_INCLUDED         "INCLUDED"
+    NEAR_TX_STATUS_INCLUDED,
   /// Transaction is included into the block +
   /// All non-refund transaction receipts finished their execution.
   /// The corresponding blocks for tx and each receipt may be not finalized yet
   /// [default]
-#define NEAR_TX_STATUS_EXEC_OPTIMISTIC  "EXECUTED_OPTIMISTIC"
+    NEAR_TX_STATUS_EXEC_OPTIMISTIC,
   /// Transaction is included into finalized block
-#define NEAR_TX_STATUS_INCLUDED_FINAL   "INCLUDED_FINAL"
+    NEAR_TX_STATUS_INCLUDED_FINAL,
   /// Transaction is included into finalized block +
   /// All non-refund transaction receipts finished their execution.
   /// The corresponding blocks for each receipt may be not finalized yet
-#define NEAR_TX_STATUS_EXECUTED         "EXECUTED"
+    NEAR_TX_STATUS_EXECUTED,
   /// Transaction is included into finalized block +
   /// Execution of all transaction receipts is finalized, including refund receipts
-#define NEAR_TX_STATUS_FINAL            "FINAL"
-
+    NEAR_TX_STATUS_FINAL
+} nearTxStatus;
 
 typedef struct 
 {
@@ -97,8 +99,10 @@ cnearResponse near_rpc_view_account(const char* account);
 cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key);
 cnearResponse near_rpc_view_state(const char* account, const char* prefix);
 cnearResponse near_rpc_call_function(const char* account, const char* method, const char* args);
-cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status);
+cnearResponse near_rpc_send_tx(nearTransaction* near_tx, nearTxStatus status);
 
-cnearResponse near_contract_call(const char* contract, const char* method, const char* args, uint64_t gas, uint64_t deposit);
+cnearResponse near_contract_call(const char* contract, const char* method, const char* args, uint64_t gas, uint64_t deposit, nearTxStatus status);
+#define near_contract_call_async(c, m, a, g, d) near_contract_call(c, m, a, g, d, NEAR_TX_STATUS_NONE)
+#define near_contract_call_await(c, m, a, g, d) near_contract_call(c, m, a, g, d, NEAR_TX_STATUS_EXEC_OPTIMISTIC)
 
 uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size);

@@ -45,6 +45,15 @@ typedef struct
     size_t size;
 } curl_memory_t;
 
+static const char* TX_STATUS[] = {
+    "NONE",
+    "INCLUDED",
+    "EXECUTED_OPTIMISTIC",
+    "INCLUDED_FINAL",
+    "EXECUTED",
+    "FINAL"
+};
+
 static char* near_rpc_url = NULL;
 static char* near_account_id = NULL;
 static char* near_b58_pub_key = NULL;
@@ -525,7 +534,7 @@ cnearResponse near_rpc_view_access_key(const char* account, const char* pub_key)
     return(ret);
 }
 
-cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status)
+cnearResponse near_rpc_send_tx(nearTransaction* near_tx, nearTxStatus status)
 {
     size_t len;
     char* b64out = NULL;
@@ -568,7 +577,7 @@ cnearResponse near_rpc_send_tx(nearTransaction* near_tx, const char* status)
 
     // Build JSON RPC request
     b64out = base64_encode(borsh_tx.memory, borsh_tx.size, &len);
-    rpc_req = build_rpc_send_tx(b64out, status);
+    rpc_req = build_rpc_send_tx(b64out, TX_STATUS[status]);
     free(borsh_tx.memory);
     free(b64out);
 
@@ -660,7 +669,7 @@ uint8_t* near_decode_result(const cnearResponse* response, size_t* out_size)
     return result_data;
 }
 
-cnearResponse near_contract_call(const char* contract, const char* method, const char* args, uint64_t gas, uint64_t deposit)
+cnearResponse near_contract_call(const char* contract, const char* method, const char* args, uint64_t gas, uint64_t deposit, nearTxStatus status)
 {
     nearAction call_action = {
         .method_name = (char*) method,
@@ -675,5 +684,5 @@ cnearResponse near_contract_call(const char* contract, const char* method, const
         .actions = &call_action
     };
 
-    return near_rpc_send_tx(&test_tx, NEAR_TX_STATUS_EXEC_OPTIMISTIC);
+    return near_rpc_send_tx(&test_tx, status);
 }
